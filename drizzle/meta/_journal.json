@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1793584374617,
+      "tag": "0000_complex_raza",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793584522115,
+      "tag": "0001_small_franklin_richards",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793640328645,
+      "tag": "0002_nappy_phantom_reporter",
+      "breakpoints": true
+    }
+  ]
+}
