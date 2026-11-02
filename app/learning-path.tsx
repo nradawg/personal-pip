@@ -48,6 +48,7 @@ function LessonPlayer({
 }) {
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
+  const [practiceAnswer, setPracticeAnswer] = useState("");
   const answers = useMemo(() => {
     const choices = [item.answer, "More equipment before any practice", "Waiting until the stream feels perfect"];
     const offset = Number(item.id.split(".")[1]) % choices.length;
@@ -105,7 +106,19 @@ function LessonPlayer({
             <div className="sparkCircle"><Sparkles /></div>
             <span className="miniLabel">USE IT TODAY</span>
             <h1>{item.action}</h1>
-            <p>Say it, write it, or do it now. {companion.name} will keep the path moving.</p>
+            <p>Write your answer below so the lesson turns into something you can actually use.</p>
+            <label className="practiceResponse">
+              <span>Your answer</span>
+              <textarea
+                value={practiceAnswer}
+                maxLength={500}
+                rows={5}
+                placeholder="Type your answer here…"
+                onChange={(event) => setPracticeAnswer(event.target.value)}
+                autoFocus
+              />
+              <small>Private and temporary. This response is not saved or sent to Twitch.</small>
+            </label>
           </section>
         )}
       </main>
@@ -114,7 +127,7 @@ function LessonPlayer({
         {step < 2 ? (
           <button className="continueButton" disabled={step === 1 && !correct} onClick={() => setStep(step + 1)}>Continue</button>
         ) : (
-          <button className="continueButton complete" onClick={onComplete}>Complete lesson · +10 XP</button>
+          <button className="continueButton complete" disabled={practiceAnswer.trim().length < 2} onClick={onComplete}>Complete lesson · +10 XP</button>
         )}
       </footer>
     </div>
