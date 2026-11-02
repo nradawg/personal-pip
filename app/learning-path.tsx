@@ -18,6 +18,49 @@ export type Progress = {
 const initialProgress: Progress = { current: 0, xp: 0, streak: 0, lastPractice: null };
 const initialTwitch: TwitchState = { configured: false, connected: false, live: false, streamsThisWeek: 0, minutesThisWeek: 0, totalStreams: 0, recentStreams: [] };
 
+type LessonQuestion = {
+  prompt: string;
+  answer: string;
+  choices: string[];
+};
+
+function buildLessonQuestions(item: Lesson): LessonQuestion[] {
+  const questions = [
+    {
+      prompt: "What is the core principle?",
+      answer: item.answer,
+      distractors: ["More equipment before any practice", "Waiting until the stream feels perfect"],
+    },
+    {
+      prompt: "Which action applies this lesson today?",
+      answer: item.action,
+      distractors: ["Buy more gear before practicing", "Keep planning without testing anything"],
+    },
+    {
+      prompt: "Which statement is true?",
+      answer: item.takeaway,
+      distractors: ["A large audience is required before this matters.", "A perfect setup matters more than a repeatable habit."],
+    },
+    {
+      prompt: "You feel stuck. What is the most useful next move?",
+      answer: item.action,
+      distractors: ["Wait until you feel completely confident", "Change several things at once"],
+    },
+    {
+      prompt: "What should you remember when you go live?",
+      answer: item.answer,
+      distractors: ["Pretend viewers asked questions when chat is quiet", "Hide every mistake instead of explaining your decision"],
+    },
+  ];
+
+  const lessonNumber = Number(item.id.replace(".", ""));
+  return questions.map((question, index) => {
+    const choices = [question.answer, ...question.distractors];
+    const offset = (lessonNumber + index) % choices.length;
+    return { prompt: question.prompt, answer: question.answer, choices: choices.slice(offset).concat(choices.slice(0, offset)) };
+  });
+}
+
 function playSuccess() {
   const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioContextClass) return;
@@ -49,18 +92,24 @@ function LessonPlayer({
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [practiceAnswer, setPracticeAnswer] = useState("");
-  const answers = useMemo(() => {
-    const choices = [item.answer, "More equipment before any practice", "Waiting until the stream feels perfect"];
-    const offset = Number(item.id.split(".")[1]) % choices.length;
-    return choices.slice(offset).concat(choices.slice(0, offset));
-  }, [item]);
-  const correct = selected === item.answer;
+  const questions = useMemo(() => buildLessonQuestions(item), [item]);
+  const questionIndex = step - 1;
+  const activeQuestion = questions[questionIndex];
+  const practiceStep = questions.length + 1;
+  const totalSteps = questions.length + 2;
+  const correct = activeQuestion ? selected === activeQuestion.answer : true;
+
+  const continueLesson = () => {
+    if (step > 0 && step <= questions.length && !correct) return;
+    setSelected(null);
+    setStep(step + 1);
+  };
 
   return (
     <div className="lessonOverlay" role="dialog" aria-modal="true" aria-label={item.title}>
       <div className="lessonTop">
         <button className="iconButton" onClick={onClose} aria-label="Close lesson"><X /></button>
-        <div className="lessonProgress"><span style={{ width: String(((step + 1) / 3) * 100) + "%" }} /></div>
+        <div className="lessonProgress"><span style={{ width: String(((step + 1) / totalSteps) * 100) + "%" }} /></div>
         <span className="heart">♥</span>
       </div>
 
@@ -78,12 +127,12 @@ function LessonPlayer({
           </section>
         )}
 
-        {step === 1 && (
+        {activeQuestion && (
           <section className="lessonCard enter">
-            <span className="miniLabel">CHECK YOUR INSTINCT</span>
-            <h1>What matters most here?</h1>
+            <span className="miniLabel">QUESTION {questionIndex + 1} OF {questions.length}</span>
+            <h1>{activeQuestion.prompt}</h1>
             <div className="answerList">
-              {answers.map((answer) => (
+              {activeQuestion.choices.map((answer) => (
                 <button
                   key={answer}
                   className={"answer " + (selected === answer ? "selected" : "")}
@@ -101,7 +150,7 @@ function LessonPlayer({
           </section>
         )}
 
-        {step === 2 && (
+        {step === practiceStep && (
           <section className="lessonCard actionCard enter">
             <div className="sparkCircle"><Sparkles /></div>
             <span className="miniLabel">USE IT TODAY</span>
@@ -124,8 +173,10 @@ function LessonPlayer({
       </main>
 
       <footer className="lessonFooter">
-        {step < 2 ? (
-          <button className="continueButton" disabled={step === 1 && !correct} onClick={() => setStep(step + 1)}>Continue</button>
+        {step < practiceStep ? (
+          <button className="continueButton" disabled={step > 0 && !correct} onClick={continueLesson}>
+            {step === 0 ? "Start 5 questions" : step === questions.length ? "Continue to practice" : "Next question"}
+          </button>
         ) : (
           <button className="continueButton complete" disabled={practiceAnswer.trim().length < 2} onClick={onComplete}>Complete lesson · +10 XP</button>
         )}

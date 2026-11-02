@@ -198,7 +198,7 @@ export const course: Unit[] = units.map((unit, unitIndex) => ({
     takeaway: seed[1],
     action: seed[2],
     answer: seed[3],
-    minutes: 3,
+    minutes: 5,
   })),
 }));
 
